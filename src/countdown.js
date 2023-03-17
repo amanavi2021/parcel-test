@@ -1,10 +1,74 @@
 class Countdown {
-    start() {
-        console.log('start');
+    #intervalID = null;
+    #days = 0;
+    #hours = 0;
+    #minutes = 0;
+    #seconds = 0;
+    #onChangeCallback= ()=>{};
+
+    constructor({onChange} = {}) {
+        if(onChange) {
+            this.#onChangeCallback = onChange;
+        }
+        }
+    #calculateData(year) {
+        const delta = new Date(year,0) - Date.now();
+        if (delta > 0) {
+            const days = Math.floor(delta/(1000*60*60*24));
+            const hours =  Math.floor((delta %(1000*60*60*24))/(1000*60*60));
+            const minutes =  Math.floor((delta %(1000*60*60))/(1000*60));
+            const seconds =  Math.floor((delta %(1000*60))/1000); 
+    
+            this.#updateData({ days, hours, minutes, seconds });
+        } else {
+            this.stop();
+        }
+
+   
+                 
     }
+
+    #updateData({ days, hours, minutes, seconds }) {
+        this.#days=days;
+        this.#hours = hours;
+        this.#minutes = minutes;
+        this.#seconds = seconds;
+     this.#onChangeData();
+    }
+
+    #onChangeData() {
+        this.#onChangeCallback({
+            days: Countdown.formatValue(this.#days), 
+            hours: Countdown.formatValue(this.#hours), 
+            minutes: Countdown.formatValue(this.#minutes),
+            seconds: Countdown.formatValue(this.#seconds),
+            });  
+     }
+
+
+    start(year) {
+        const isStartDateValid = Countdown.isDateValid(year);
+        if (!isStartDateValid) {
+            console.error('year is not a valid date');
+            return;
+        }
+
+        this.#calculateData(year);
+        this.#intervalID = setInterval(() => this.#calculateData(year), 1000);
+
+    }
+
     stop() {
-        console.log('stop');
+        clearInterval(this.#intervalID);
     }
+
+    static formatValue(value) {
+        return value.toString().padStart(2,'0');
+    }
+
+    static isDateValid(dateString) {
+        return !isNaN(Date.parse(dateString));
+       }
 };
 
 
@@ -28,7 +92,7 @@ const markup= `
 
 // add to DOM
 document.body.innerHTML = markup;
-const countdown = new Countdown();
+const countdown = new Countdown({onChange:  onCountdownChange});
 
 
 //add refs
@@ -51,7 +115,7 @@ ref.actionForm.addEventListener('submit', (e) => {
         submitBtn.textContent= 'stop';
         dataset.action = 'stop';
         year.disabled = true;
-        countdown.start();
+        countdown.start(year.value);
     } else {
         submitBtn.textContent= 'start';
         dataset.action = 'start';
@@ -62,4 +126,11 @@ ref.actionForm.addEventListener('submit', (e) => {
 
 
 });
+
+function onCountdownChange({days, hours, minutes, seconds}) {
+ref.days.textContent = days;
+ref.hours.textContent = hours;
+ref.minutes.textContent = minutes;
+ref.seconds.textContent = seconds;
+}
 
